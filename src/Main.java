@@ -1,13 +1,6 @@
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
-    public Main() throws IOException {
-    }
-
     public static void main(String[] args) throws IOException {
 
         initializeFile();
@@ -30,59 +23,124 @@ public class Main {
 
     }
 
+
+    private static void updateTask(String[] args)  throws IOException {
+            BufferedReader reader = new BufferedReader(new FileReader("tasks.json"));
+            String line;
+        // should complete
+    }
+
+
+    private static int getId() throws IOException {
+        int maxId = 0;
+        BufferedReader reader = new BufferedReader(new FileReader("tasks.json"));
+        String line;
+        while((line = reader.readLine()) != null) {
+            if(line.trim().isEmpty()) continue;
+            if(!line.contains("\"id\"")) continue;
+            String tId = line.substring(line.indexOf(":") + 1, line.indexOf(","));
+            int id = Integer.parseInt(tId);
+            if(id > maxId) {
+                maxId = id;
+            }
+        }
+        reader.close();
+        return maxId;
+    }
+
+
     private static void removeTask(String[] args) throws IOException {
+
         if (args.length < 2) {
             System.out.println("task id required");
             return;
         }
-        System.out.println("removing task : " + args[1]);
+
         int num = Integer.parseInt(args[1]);
+
         BufferedReader reader = new BufferedReader(new FileReader("tasks.json"));
         String line;
+
         StringBuilder sb = new StringBuilder();
-        int currLine = 1;
+
+        boolean foundNum = false;
+
         while ((line = reader.readLine()) != null) {
-            if (currLine != num) {
+
+            if(line.trim().isEmpty()) continue;
+
+            String key = "\"id\":";
+            int start = line.indexOf(key) + key.length();
+            int end = line.indexOf(",", start);
+            String idStr = line.substring(start, end);
+
+            int id = Integer.parseInt(idStr);
+
+            if (id != num) {
                 sb.append(line).append("\n");
+            } else {
+                foundNum = true;
+                continue;
             }
-            currLine++;
         }
+
         reader.close();
+
+        if(!foundNum) {
+            System.out.println("No tasks found");
+        } else {
+            System.out.println("task removed");
+        }
 
         FileWriter writer = new FileWriter("tasks.json");
         writer.write(sb.toString());
         writer.close();
-
-        System.out.println("task removed");
     }
 
     private static void listTasks() throws IOException {
         System.out.println("available tasks : ");
+
         BufferedReader reader = new BufferedReader(new FileReader("tasks.json"));
         String line;
         int count = 1;
 
-        while((line = reader.readLine()) != null) {
-            if(line.trim().isEmpty()) continue;
-            String task = line.substring(line.indexOf(":\"") + 2, line.lastIndexOf("\""));
-            System.out.println(count + ". " + task);
+        while ((line = reader.readLine()) != null) {
+            if (line.trim().isEmpty()) continue;
+
+            String key = "\"description\":\"";
+            int start = line.indexOf(key) + key.length();
+            int end = line.indexOf("\"", start);
+            String description = line.substring(start, end);
+
+            String key2 = "\"status\":\"";
+            int start2 = line.indexOf(key2) + key2.length();
+            int end2 = line.indexOf("\"", start2);
+            String status = line.substring(start2, end2);
+
+            String idKey = "\"id\":";
+            int idStart = line.indexOf(idKey) + idKey.length();
+            int idEnd = line.indexOf(",", idStart);
+            String id = line.substring(idStart, idEnd);
+
+            System.out.println(count + ". "+ "(" + id + ")" + " [" + status + "] " + description);
+
             count++;
         }
+
         reader.close();
     }
 
+
     private static void addTask(String[] args) throws IOException {
-        if(args.length < 2){
-            System.out.println("description required");
-            return;
-        } System.out.println("adding task : " + args[1]);
+        int newId = getId() + 1;
+        BufferedWriter writer = new BufferedWriter(new FileWriter("tasks.json", true));
+        writer.write("\n{\"id\":" + newId + ",\"description\":\"" + args[1] + "\",\"status\":\"todo\"}");
+        writer.close();
 
-        FileWriter writer = new FileWriter("tasks.json", true);
-        writer.write("\n[ ] " + args[1]);
-            writer.close();
-
-            System.out.println("task added");
+        System.out.println("task added ");
     }
+
+
     private static void initializeFile() throws IOException {
         File file = new File("tasks.json");
 
